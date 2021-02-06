@@ -1,0 +1,58 @@
+{
+  "variables": {
+    "ansible_host": "default",
+    "ansible_connection": "docker",
+    "chroot": "/tmp/chroot_tmpfs/merge"
+  },
+  "builders": [
+    {
+      "type": "docker",
+      "image": "alpine:latest",
+      "commit": true,
+      "run_command": [
+        "-d",
+        "-i",
+        "-t",
+        "--name",
+        "{{user `ansible_host`}}",
+        "{{.Image}}",
+        "/bin/sh"
+      ],
+      "cap_add": [
+        "SYS_ADMIN"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "ansible",
+      "user": "root",
+      "playbook_file": "ansible/site.yml",
+      "galaxy_file": "ansible/roles/requirements.yml",
+      "galaxy_force_install": true,
+      "extra_arguments": [
+        "--extra-vars",
+        "ansible_host={{user `ansible_host`}} ansible_connection={{user `ansible_connection`}}"
+      ]
+    },
+    {
+      "type": "puppet-masterless",
+      "puppet_bin_dir": "PATH='{{ user `chroot` }}/usr/bin:{{ user `chroot` }}/usr/sbin:{{ user `chroot` }}/bin' RUBYLIB='{{ user `chroot` }}/usr/lib/ruby/2.7.0:{{ user `chroot` }}/usr/lib/ruby/2.7.0/x86_64-linux-musl' LD_LIBRARY_PATH='{{ user `chroot` }}/usr/lib' ruby {{ user `chroot` }}/usr/bin",
+      "manifest_file": "puppet/manifests/site.pp",
+      "hiera_config_path": "puppet/manifests/hiera.yaml",
+      "module_paths": "puppet/modules",
+      "prevent_sudo": true
+    }
+  ],
+  "post-processors": [
+    [
+      {
+        "type": "docker-tag",
+        "repository": "packer-ansible-test",
+        "tags": [
+          "latest"
+        ]
+      }
+    ]
+  ]
+}

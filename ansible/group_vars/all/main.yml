@@ -1,0 +1,14 @@
+---
+chroot_libs:
+  - "{{ chroot_path }}/usr/lib"
+  - "{{ chroot_path }}/lib/x86_64-linux-gnu"
+ansible_python_interpreter_chroot: "LD_LIBRARY_PATH='{{ chroot_libs | join(':') }}' {{ chroot_path }}/usr/bin/python3"
+
+chroot_apk_packages:
+  - ruby
+  - ruby-etc
+  - ruby-json
+  - shadow
+
+chroot_post_cmds:
+  - "gem install --no-document puppet:7.3.0 facter:4.0.49"
